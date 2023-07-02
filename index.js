@@ -42,6 +42,23 @@ app.get("/produtos", (req, res) => {
     }
 });
 
+app.get("/produtos/:id", (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        client.query("SELECT * FROM produtos WHERE id = $1", [id], (err, result) => {
+            if (err) {
+            return console.error("Erro ao executar a query de select produtos.", err);
+            }
+            res.send(result.rows);
+            console.log("Chamou get produtos/:id")
+        });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+
+
 app.get("/logins", (req, res) => {
     try {
         client.query("SELECT * FROM logins", (err, result) => {
