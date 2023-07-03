@@ -74,19 +74,26 @@ app.get("/logins", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  try{
+  try {
     const { email, senha } = req.body;
     client.query("SELECT * FROM logins WHERE email = $1 AND senha = $2", [email, senha], (err, result) => {
       if (err) {
         return console.error("Erro ao executar a query de select logins.", err);
       }
-      res.send(result.rows);
-      console.log("Chamou post login")
+
+      if (result.rows.length > 0) {
+        // Credenciais corretas, envie uma resposta de sucesso
+        res.status(200).json({ message: "Login bem-sucedido" });
+      } else {
+        // Credenciais inválidas, envie uma resposta de erro
+        res.status(401).json({ message: "Credenciais inválidas" });
+      }
     });
   } catch (error) {
     console.log(error);
   }
 });
+
 
 app.listen(config.port, () =>
   console.log("Servidor funcionando na porta " + config.port)
