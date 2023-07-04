@@ -3,6 +3,12 @@ const { Client } = require("pg");
 const cors = require("cors");
 const bodyparser = require("body-parser");
 const config = require("./config");
+const crypto = require("crypto");
+// Gera uma chave secreta aleatória
+const generateSecretKey = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+const secretKey = generateSecretKey();
 
 const app = express();
 app.use(express.json());
@@ -28,7 +34,26 @@ app.get("/", (req, res) => {
   res.send("Ok – Servidor disponível.");
 });
 
-app.get("/produtos", (req, res) => {
+
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Token de autenticação não fornecido' });
+  }
+
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ success: false, message: 'Token de autenticação inválido' });
+    }
+
+    req.id = decoded.id;
+    next();
+  });
+};
+
+// Rota protegida por autenticação
+app.get('/produtos', verifyToken, (req, res) => {
   try {
     client.query("SELECT * FROM produtos", (err, result) => {
       if (err) {
@@ -82,49 +107,85 @@ app.get("/logins", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  try {
-    const { email, senha } = req.body;
-    client.query(
-      "SELECT * FROM logins WHERE email = $1 AND senha = $2",
-      [email, senha],
-      (err, result) => {
-        if (err) {
-          return res.status(500).json({ success: false, message: "Erro ao executar a query select logins." });
-        }
-        if (result.rowCount === 1) {
-          res.status(200).json({ success: true, message: "Login bem-sucedido" });
-        } else {
-          res.status(401).json({ success: false, message: "Credenciais inválidas" });
-        }
+  const { email, senha } = req.body;
+  // Verificar se o usuário existe (substitua com sua lógica de banco de dados)
+  client.query(
+    "SELECT * FROM logins WHERE email = $1",
+    [email],
+    (err, result) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Erro ao executar a query select logins.",
+          });
       }
-    );
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Erro ao processar o login" });
-  }
-});
 
+      if (result.rowCount === 0) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Credenciais inválidas" });
+      }
+
+      const user = result.rows[0];
+
+      // Verificar a senha
+      bcrypt.compare(senha, user.senha, (err, result) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ success: false, message: "Erro ao comparar as senhas" });
+        }
+
+        if (!result) {
+          return res
+            .status(401)
+            .json({ success: false, message: "Credenciais inválidas" });
+        }
+
+        // Gerar o token de autenticação
+        const token = jwt.sign({ id: user.id }, secretKey, { expiresIn: "1h" });
+
+        res
+          .status(200)
+          .json({ success: true, message: "Login bem-sucedido", token: token });
+      });
+    }
+  );
+});
 
 app.post("/register", (req, res) => {
-  try {
-    const { nome_usuario, email, senha } = req.body;
+  const { nome_usuario, email, senha } = req.body;
+
+  // Gerar o hash da senha
+  bcrypt.hash(senha, 10, (err, hashedPassword) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Erro ao criar hash da senha" });
+    }
+
+    // Salvar usuário no banco de dados (substitua com sua lógica de banco de dados)
     client.query(
       "INSERT INTO logins (nome_usuario, email, senha) VALUES ($1, $2, $3)",
-      [nome_usuario, email, senha],
+      [nome_usuario, email, hashedPassword],
       (err, result) => {
         if (err) {
-          return res.status(500).json({ success: false, message: "Erro ao executar a query de insert logins." });
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Erro ao executar a query de insert logins.",
+            });
         }
-        res.status(200).json({ success: true, message: "Registro bem-sucedido" });
+        res
+          .status(200)
+          .json({ success: true, message: "Registro bem-sucedido" });
       }
     );
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Erro ao processar o registro" });
-  }
+  });
 });
-
-
 
 app.listen(config.port, () =>
   console.log("Servidor funcionando na porta " + config.port)
