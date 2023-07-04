@@ -110,10 +110,10 @@ app.get("/logins", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { email, senha } = req.body;
-  // Verificar se o usuário existe (substitua com sua lógica de banco de dados)
+  // Verificar se o usuário existe
   client.query(
-    "SELECT * FROM logins WHERE email = $1",
-    [email],
+    "SELECT * FROM logins WHERE email = $1 AND senha = $2",
+    [email, senha],
     (err, result) => {
       if (err) {
         return res
