@@ -112,12 +112,10 @@ app.post("/register", (req, res) => {
     const { nome_usuario, email, senha } = req.body;
     client.query(
       "INSERT INTO logins (nome_usuario, email, senha) VALUES ($1, $2, $3)",
-      [nome_usuario, email, senha],
-      (err, result) => {
+      [nome_usuario, email, senha], (err, result) => {
         if (err) {
           return res.status(500).json({ success: false, message: "Erro ao executar a query de insert logins." });
         }
-        
         res.status(200).json({ success: true, message: "Registro bem-sucedido" });
       }
     );
