@@ -38,25 +38,6 @@ app.get("/", (req, res) => {
   res.send("Ok – Servidor disponível.");
 });
 
-
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization;
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Token de autenticação não fornecido' });
-  }
-
-  jwt.verify(token, secretKey, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ success: false, message: 'Token de autenticação inválido' });
-    }
-
-    req.id = decoded.id;
-    next();
-  });
-};
-
-// Rota protegida por autenticação
 app.get('/produtos', (req, res) => {
   const token = req.cookies.token;
 
@@ -82,7 +63,6 @@ app.get('/produtos', (req, res) => {
     }
   });
 });
-
 
 app.get("/produtos/:id", (req, res) => {
   try {
