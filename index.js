@@ -89,23 +89,14 @@ app.post("/login", (req, res) => {
       [email, senha],
       (err, result) => {
         if (err) {
-          return console.error(
-            "Erro ao executar a query de select logins.",
-            err
-          );
+          return res.status(500).json({ success: false, message: "Erro ao executar a query select logins." });
         }
-
-        if (result.rows.length > 0) {
-          // Credenciais corretas, envie uma resposta de sucesso
-          res.status(200).json({ message: "Login bem-sucedido" });
-        } else {
-          // Credenciais inválidas, envie uma resposta de erro
-          res.status(401).json({ message: "Credenciais inválidas" });
-        }
+        res.status(200).json({ success: true, message: "Login bem-sucedido" });
       }
     );
   } catch (error) {
     console.log(error);
+    res.status(500).json({ success: false, message: "Erro ao processar o login" });
   }
 });
 
@@ -119,7 +110,6 @@ app.post("/register", (req, res) => {
         if (err) {
           return res.status(500).json({ success: false, message: "Erro ao executar a query de insert logins." });
         }
-        
         res.status(200).json({ success: true, message: "Registro bem-sucedido" });
       }
     );
