@@ -3,9 +3,9 @@ const { Client } = require("pg");
 const cors = require("cors");
 const bodyparser = require("body-parser");
 const config = require("./config");
-const crypto = require("crypto");
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require("crypto");
+
 // Gera uma chave secreta aleatória
 const generateSecretKey = () => {
   return crypto.randomBytes(32).toString("hex");
@@ -130,29 +130,12 @@ app.post("/login", (req, res) => {
           .json({ success: false, message: "Credenciais inválidas" });
       }
 
-      const user = result.rows[0];
+      // Gerar o token de autenticação
+      const token = jwt.sign({ email: email }, secretKey, { expiresIn: "1h" });
 
-      // Verificar a senha
-      bcrypt.compare(senha, user.senha, (err, result) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ success: false, message: "Erro ao comparar as senhas" });
-        }
-
-        if (!result) {
-          return res
-            .status(401)
-            .json({ success: false, message: "Credenciais inválidas" });
-        }
-
-        // Gerar o token de autenticação
-        const token = jwt.sign({ id: user.id }, secretKey, { expiresIn: "1h" });
-
-        res
-          .status(200)
-          .json({ success: true, message: "Login bem-sucedido", token: token });
-      });
+      res
+        .status(200)
+        .json({ success: true, message: "Login bem-sucedido", token: token });
     }
   );
 });
@@ -160,33 +143,24 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const { nome_usuario, email, senha } = req.body;
 
-  // Gerar o hash da senha
-  bcrypt.hash(senha, 10, (err, hashedPassword) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ success: false, message: "Erro ao criar hash da senha" });
-    }
-
-    // Salvar usuário no banco de dados (substitua com sua lógica de banco de dados)
-    client.query(
-      "INSERT INTO logins (nome_usuario, email, senha) VALUES ($1, $2, $3)",
-      [nome_usuario, email, hashedPassword],
-      (err, result) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Erro ao executar a query de insert logins.",
-            });
-        }
-        res
-          .status(200)
-          .json({ success: true, message: "Registro bem-sucedido" });
+  // Salvar usuário no banco de dados (substitua com sua lógica de banco de dados)
+  client.query(
+    "INSERT INTO logins (nome_usuario, email, senha) VALUES ($1, $2, $3)",
+    [nome_usuario, email, senha],
+    (err, result) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Erro ao executar a query de insert logins.",
+          });
       }
-    );
-  });
+      res
+        .status(200)
+        .json({ success: true, message: "Registro bem-sucedido" });
+    }
+  );
 });
 
 app.listen(config.port, () =>
