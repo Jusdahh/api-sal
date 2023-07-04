@@ -117,17 +117,18 @@ app.post("/register", (req, res) => {
       [nome_usuario, email, senha],
       (err, result) => {
         if (err) {
-          return res.status(500).json({ message: "Erro ao executar a query de insert logins." });
+          return res.status(500).json({ success: false, message: "Erro ao executar a query de insert logins." });
         }
         
-        res.status(200).json({ message: "Registro bem-sucedido" });
+        res.status(200).json({ success: true, message: "Registro bem-sucedido" });
       }
     );
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Erro ao processar o registro" });
+    res.status(500).json({ success: false, message: "Erro ao processar o registro" });
   }
 });
+
 
 
 app.listen(config.port, () =>
