@@ -4,7 +4,7 @@ const cors = require("cors");
 const bodyparser = require("body-parser");
 const config = require("./config");
 const crypto = require("crypto");
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 // Gera uma chave secreta aleatória
 const generateSecretKey = () => {
