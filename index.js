@@ -3,21 +3,11 @@ const { Client } = require("pg");
 const cors = require("cors");
 const bodyparser = require("body-parser");
 const config = require("./config");
-const jwt = require('jsonwebtoken');
-const crypto = require("crypto");
-const cookieParser = require("cookie-parser");
-
-// Gera uma chave secreta aleatória
-const generateSecretKey = () => {
-  return crypto.randomBytes(32).toString("hex");
-};
-const secretKey = generateSecretKey();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyparser.json());
-app.use(cookieParser());
 
 var conString = config.urlConnection;
 var client = new Client(conString);
@@ -39,29 +29,17 @@ app.get("/", (req, res) => {
 });
 
 app.get('/produtos', (req, res) => {
-  const token = req.cookies.token;
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Token de autenticação não fornecido' });
+  try {
+    client.query("SELECT * FROM produtos", (err, result) => {
+      if (err) {
+        return console.error("Erro ao executar a query de select produtos.", err);
+      }
+      res.send(result.rows);
+      console.log("Chamou get produtos");
+    });
+  } catch (error) {
+    console.log(error);
   }
-
-  jwt.verify(token, secretKey, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ success: false, message: 'Token de autenticação inválido' });
-    }
-
-    try {
-      client.query("SELECT * FROM produtos", (err, result) => {
-        if (err) {
-          return console.error("Erro ao executar a query de select produtos.", err);
-        }
-        res.send(result.rows);
-        console.log("Chamou get produtos");
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  });
 });
 
 app.get("/produtos/:id", (req, res) => {
@@ -122,15 +100,9 @@ app.post("/login", (req, res) => {
           .json({ success: false, message: "Credenciais inválidas" });
       }
 
-      // Gerar o token de autenticação
-      const token = jwt.sign({ email: email }, secretKey, { expiresIn: "1h" });
-
-      // Definir o cookie
-      res.cookie("token", token, { httpOnly: true });
-
       res
         .status(200)
-        .json({ success: true, message: "Login bem-sucedido", token: token });
+        .json({ success: true, message: "Login bem-sucedido" });
     }
   );
 });
