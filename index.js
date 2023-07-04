@@ -91,7 +91,11 @@ app.post("/login", (req, res) => {
         if (err) {
           return res.status(500).json({ success: false, message: "Erro ao executar a query select logins." });
         }
-        res.status(200).json({ success: true, message: "Login bem-sucedido" });
+        if (result.rowCount === 1) {
+          res.status(200).json({ success: true, message: "Login bem-sucedido" });
+        } else {
+          res.status(401).json({ success: false, message: "Credenciais inválidas" });
+        }
       }
     );
   } catch (error) {
@@ -99,6 +103,7 @@ app.post("/login", (req, res) => {
     res.status(500).json({ success: false, message: "Erro ao processar o login" });
   }
 });
+
 
 app.post("/register", (req, res) => {
   try {
